@@ -1,3 +1,4 @@
+
 import os
 import joblib
 import pandas as pd
@@ -6,116 +7,256 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from sklearn.metrics import (
-    accuracy_score, roc_auc_score, precision_score, recall_score,
-    f1_score, matthews_corrcoef, confusion_matrix, classification_report
+    accuracy_score,
+    roc_auc_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    matthews_corrcoef,
+    confusion_matrix,
+    classification_report
 )
 
-st.set_page_config(page_title="Bank Marketing Classifier", page_icon="📊", layout="wide")
-st.title("Bank Marketing – Classification Models")
+st.set_page_config(
+    page_title="Bank Marketing Classification",
+    page_icon="📊",
+    layout="wide"
+)
+
+st.title("Bank Marketing - Classification Models")
 st.write(
-    "Upload the held-out test CSV, choose one of the five pre-trained classifiers, "
-    "and evaluate it. The app loads saved pipelines; it does not retrain models."
+    "Upload your test dataset to evaluate five pre-trained "
+    "classification models. No model retraining is performed."
 )
 
-MODEL_DIR = "models"
+# Saved model locations
 MODEL_FILES = {
-    "Logistic Regression": "logistic_regression.joblib",
-    "Decision Tree": "decision_tree.joblib",
-    "KNN": "knn.joblib",
-    "Naive Bayes": "naive_bayes.joblib",
-    "Support Vector Machine": "support_vector_machine.joblib",
+    "Logistic Regression": "models/logistic_regression.joblib",
+    "Decision Tree": "models/decision_tree.joblib",
+    "KNN": "models/knn.joblib",
+    "Naive Bayes": "models/naive_bayes.joblib",
+    "Support Vector Machine": "models/support_vector_machine.joblib"
 }
+
 
 @st.cache_resource
 def load_model(path):
     return joblib.load(path)
 
-uploaded = st.file_uploader("Upload test data (CSV)", type=["csv"])
-if uploaded is None:
-    st.info("Upload test_data.csv to begin. It must include the target column 'y'.")
+
+# 1. Upload CSV
+st.header("1. Upload Test Dataset")
+
+uploaded_file = st.file_uploader(
+    "Choose your test CSV file",
+    type=["csv"]
+)
+
+if uploaded_file is None:
+    st.info("Please upload test_data.csv to continue.")
     st.stop()
 
-try:
-    data = pd.read_csv(uploaded)
-except Exception as exc:
-    st.error(f"Could not read the CSV: {exc}")
+df = pd.read_csv(uploaded_file)
+
+if "y" not in df.columns:
+    st.error("Target column 'y' is missing.")
     st.stop()
 
-if "y" not in data.columns:
-    st.error("The uploaded CSV must contain the target column 'y'.")
-    st.stop()
-if data.empty:
-    st.error("The uploaded CSV contains no rows.")
+if df.empty or df["y"].isna().any():
+    st.error("The uploaded dataset is empty or contains missing target values.")
     st.stop()
 
-X_test = data.drop(columns=["y"])
-y_test = data["y"].astype(str)
-if not set(y_test.unique()).issubset({"yes", "no"}):
-    st.error("Target column 'y' must contain only 'yes' and 'no'.")
+if not set(df["y"].unique()).issubset({"yes", "no"}):
+    st.error("Target column must contain only yes and no.")
     st.stop()
 
-st.subheader("Uploaded dataset")
-st.write(f"Rows: **{len(data):,}** · Input columns: **{len(X_test.columns)}**")
-st.dataframe(data.head(), use_container_width=True)
+X_test = df.drop(columns=["y"])
+y_test = df["y"]
 
-model_name = st.selectbox("Select a classification model", list(MODEL_FILES))
-model_path = os.path.join(MODEL_DIR, MODEL_FILES[model_name])
-if not os.path.isfile(model_path):
-    st.error(f"Model file not found: {model_path}. Check that the models folder is committed to GitHub.")
-    st.stop()
+st.subheader("Uploaded Dataset")
+st.write("Dataset shape:", df.shape)
+st.dataframe(df.head(), use_container_width=True)
 
-try:
-    model = load_model(model_path)
-    y_pred = model.predict(X_test)
-    classifier = model.named_steps.get("classifier") if hasattr(model, "named_steps") else model
-    if hasattr(classifier, "predict_proba"):
-        y_score = model.predict_proba(X_test)[:, 1]
-    elif hasattr(model, "decision_function"):
-        y_score = model.decision_function(X_test)
-    else:
-        y_score = None
 
-    y_true_binary = (y_test == "yes").astype(int)
-    y_pred_binary = (pd.Series(y_pred, index=y_test.index) == "yes").astype(int)
+# 2. Load and evaluate all five models
+st.header("2. Model Evaluation")
 
-    metrics = {
-        "Accuracy": accuracy_score(y_test, y_pred),
-        "AUC": roc_auc_score(y_true_binary, y_score) if y_score is not None else float("nan"),
-        "Precision": precision_score(y_test, y_pred, pos_label="yes", zero_division=0),
-        "Recall": recall_score(y_test, y_pred, pos_label="yes", zero_division=0),
-        "F1 Score": f1_score(y_test, y_pred, pos_label="yes", zero_division=0),
-        "MCC": matthews_corrcoef(y_test, y_pred),
-    }
+all_results = {}
+loaded_models = {}
+errors = {}
 
-    st.subheader(f"Evaluation results – {model_name}")
-    cols = st.columns(6)
-    for col, (label, value) in zip(cols, metrics.items()):
-        col.metric(label, f"{value:.4f}" if pd.notna(value) else "N/A")
+for model_name, model_path in MODEL_FILES.items():
 
-    left, right = st.columns(2)
-    with left:
-        st.markdown("**Confusion matrix**")
-        cm = confusion_matrix(y_test, y_pred, labels=["no", "yes"])
-        fig, ax = plt.subplots()
-        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
-                    xticklabels=["no", "yes"], yticklabels=["no", "yes"], ax=ax)
-        ax.set_xlabel("Predicted")
-        ax.set_ylabel("Actual")
-        st.pyplot(fig)
-        plt.close(fig)
-    with right:
-        st.markdown("**Classification report**")
-        st.code(classification_report(y_test, y_pred, labels=["no", "yes"], zero_division=0))
+    if not os.path.exists(model_path):
+        errors[model_name] = f"Missing model file: {model_path}"
+        continue
 
-except Exception as exc:
-    st.error("The saved model could not evaluate this CSV.")
-    st.exception(exc)
-    st.caption(
-        "Saved scikit-learn models must be loaded with a compatible scikit-learn version "
-        "and the same input feature schema used during training."
+    try:
+        model = load_model(model_path)
+
+        # Match the original training feature order
+        expected_features = getattr(
+            model, "feature_names_in_", None
+        )
+
+        if expected_features is not None:
+            missing = set(expected_features) - set(X_test.columns)
+
+            if missing:
+                raise ValueError(
+                    f"Missing input features: {sorted(missing)}"
+                )
+
+            model_input = X_test[list(expected_features)]
+        else:
+            model_input = X_test
+
+        predictions = model.predict(model_input)
+
+        classifier = (
+            model.named_steps["classifier"]
+            if hasattr(model, "named_steps")
+            else model
+        )
+
+        if (
+            hasattr(classifier, "predict_proba")
+            and getattr(classifier, "probability", True)
+        ):
+            scores = model.predict_proba(model_input)[:, 1]
+        elif hasattr(model, "decision_function"):
+            scores = model.decision_function(model_input)
+        else:
+            scores = None
+
+        y_binary = (y_test == "yes").astype(int)
+
+        metrics = {
+            "ML Model Name": model_name,
+            "Accuracy": accuracy_score(y_test, predictions),
+            "AUC": (
+                roc_auc_score(y_binary, scores)
+                if scores is not None
+                else float("nan")
+            ),
+            "Precision": precision_score(
+                y_test, predictions,
+                pos_label="yes", zero_division=0
+            ),
+            "Recall": recall_score(
+                y_test, predictions,
+                pos_label="yes", zero_division=0
+            ),
+            "F1 Score": f1_score(
+                y_test, predictions,
+                pos_label="yes", zero_division=0
+            ),
+            "MCC": matthews_corrcoef(y_test, predictions)
+        }
+
+        all_results[model_name] = {
+            "metrics": metrics,
+            "predictions": predictions,
+            "model": model
+        }
+
+        loaded_models[model_name] = model
+
+    except Exception as e:
+        errors[model_name] = str(e)
+
+
+# Display comparison of all models
+if all_results:
+
+    st.subheader("Performance Comparison - All Five Models")
+
+    comparison_df = pd.DataFrame([
+        result["metrics"]
+        for result in all_results.values()
+    ])
+
+    st.dataframe(
+        comparison_df.round(4),
+        use_container_width=True,
+        hide_index=True
     )
 
-with st.expander("View model comparison from the training experiment"):
-    if os.path.exists("model_comparison.csv"):
-        comparison = pd.read_csv("model_comparison.csv")
-        st.dataframe(comparison, use_container_width=True)
+    # 3. Model selection
+    st.header("3. Select Model")
+
+    selected_model = st.selectbox(
+        "Choose a model to view detailed evaluation:",
+        list(all_results.keys())
+    )
+
+    selected = all_results[selected_model]
+    y_pred = selected["predictions"]
+
+    st.subheader(f"Metrics - {selected_model}")
+
+    metric_values = selected["metrics"]
+
+    cols = st.columns(6)
+
+    for col, metric in zip(
+        cols,
+        ["Accuracy", "AUC", "Precision", "Recall", "F1 Score", "MCC"]
+    ):
+        value = metric_values[metric]
+
+        col.metric(
+            metric,
+            f"{value:.4f}" if pd.notna(value) else "N/A"
+        )
+
+    # 4. Confusion matrix
+    st.header("4. Confusion Matrix")
+
+    cm = confusion_matrix(
+        y_test,
+        y_pred,
+        labels=["no", "yes"]
+    )
+
+    fig, ax = plt.subplots(figsize=(5, 4))
+
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        xticklabels=["No", "Yes"],
+        yticklabels=["No", "Yes"],
+        ax=ax
+    )
+
+    ax.set_xlabel("Predicted")
+    ax.set_ylabel("Actual")
+    ax.set_title(selected_model)
+
+    st.pyplot(fig)
+    plt.close(fig)
+
+    # Classification report
+    st.subheader("Classification Report")
+
+    report = classification_report(
+        y_test,
+        y_pred,
+        labels=["no", "yes"],
+        zero_division=0
+    )
+
+    st.code(report)
+
+else:
+    st.error("None of the five models could be evaluated.")
+
+if errors:
+    st.subheader("Model loading or evaluation errors")
+
+    for name, error in errors.items():
+        st.error(f"{name}: {error}")
+
+st.success("Evaluation completed. No models were retrained.")
