@@ -1,69 +1,116 @@
-# Bank Marketing Classification – ML Assignment 2
+# Machine Learning Assignment – 2
+## Bank Marketing – Classification Models
 
-## a. Problem statement
-The objective is to predict whether a bank client will subscribe to a term deposit (`y = yes` or `no`) using the UCI Bank Marketing dataset. Five classification algorithms are trained and evaluated on the same held-out test set. A Streamlit application loads the saved models and evaluates an uploaded test CSV without retraining.
+### a. Problem Statement
 
-## b. Dataset description
-- **Dataset:** UCI Bank Marketing (`bank-full.csv`)
-- **Source:** https://archive.ics.uci.edu/dataset/222/bank+marketing
-- **Instances:** 45,211
-- **Original columns:** 17 (16 input columns and target `y`)
-- **Target:** `y` (`yes` / `no`), binary classification
-- **Test file:** `test_data.csv` (9,043 rows; 16 input columns plus target)
-- The training notebook's preprocessing definition selects the 15 predictors excluding `duration`; the test CSV retains the `duration` column. The saved sklearn pipeline applies its configured preprocessing to the input dataframe.
+The objective of this assignment is to develop and evaluate different Machine Learning classification models using the Bank Marketing dataset.
 
-## c. GitHub Repository Link
+The goal is to predict whether a customer will subscribe to a term deposit (`yes` or `no`) based on customer demographic information, financial details, and previous marketing campaign interactions.
+
+Five classification algorithms are implemented and evaluated using the same dataset:
+
+1. Logistic Regression
+2. Decision Tree Classifier
+3. K-Nearest Neighbors (KNN)
+4. Naive Bayes Classifier
+5. Support Vector Machine (SVM)
+
+The models are evaluated using Accuracy, AUC Score, Precision, Recall, F1 Score, and Matthews Correlation Coefficient (MCC).
+
+### b. Dataset Description
+
+**Dataset Name:** Bank Marketing Dataset
+
+**Source:** UCI Machine Learning Repository
+
+**Dataset Link:** https://archive.ics.uci.edu/dataset/222/bank+marketing
+
+The Bank Marketing dataset contains information about customers contacted during direct marketing campaigns conducted by a Portuguese banking institution.
+
+**Dataset Details:**
+
+- Total instances: 45,211
+- Total columns: 17
+- Input features: 15
+- Target variable: `y`
+- Classification type: Binary Classification
+- Numerical features: 6
+- Categorical features: 9
+- Missing values: 0
+
+**Target Variable:**
+
+The target variable `y` indicates whether the customer subscribed to a term deposit.
+
+- `yes` – Customer subscribed to a term deposit.
+- `no` – Customer did not subscribe to a term deposit.
+
+**Data Preprocessing:**
+
+- Checked the dataset for missing values.
+- Separated input features and target variable.
+- Identified numerical and categorical features.
+- Applied appropriate preprocessing to numerical and categorical features.
+- Split the dataset into 80% training data and 20% testing data.
+
+Training dataset: 36,168 records.
+
+Testing dataset: 9,043 records.
+
+### c. GitHub Repository Link
+
+**GitHub Repository:**
+
 https://github.com/divyams-bits/ML-Assignment-2
 
-The repository includes:
-- `app.py` – Streamlit evaluation interface
-- `requirements.txt` – deployment dependencies
-- `ML2.ipynb` – Jupyter notebook containing the experiment code
-- `test_data.csv` – held-out test data
-- `model_comparison.csv` – recorded evaluation metrics
-- `models/` – five serialized trained pipelines
+The repository contains the following project files:
 
-## d. Models used and evaluation
+- `app.py` – Streamlit application.
+- `requirements.txt` – Required Python dependencies.
+- `README.md` – Project documentation and model evaluation results.
+- `test_data.csv` – Test dataset used for model evaluation.
+- `model_comparison.csv` – Comparison of evaluation metrics for all five models.
+- `ML2.ipynb` – Jupyter Notebook containing the implementation.
+- `models/` – Directory containing all five saved trained classification models in Joblib format.
 
-The following values are copied from the supplied `model_comparison.csv`. Metrics are rounded to four decimal places.
+### d. Models Used and Performance Evaluation
+
+The following five classification models were implemented using the Bank Marketing dataset.
+
+#### Model Comparison Table
 
 | ML Model Name | Accuracy | AUC | Precision | Recall | F1 Score | MCC |
 |---|---:|---:|---:|---:|---:|---:|
-| Logistic Regression | 0.8933 | 0.7717 | 0.6632 | 0.1786 | 0.2815 | 0.3065 |
-| Decision Tree | 0.8309 | 0.6132 | 0.2982 | 0.3289 | 0.3128 | 0.2170 |
+| Logistic Regression | 0.7548 | 0.7722 | 0.2662 | 0.6238 | 0.3732 | 0.2853 |
+| Decision Tree | 0.8268 | 0.7465 | 0.3490 | 0.5548 | 0.4285 | 0.3450 |
 | KNN | 0.8874 | 0.7027 | 0.5529 | 0.1975 | 0.2911 | 0.2833 |
 | Naive Bayes | 0.8452 | 0.7514 | 0.3708 | 0.4641 | 0.4123 | 0.3271 |
-| Support Vector Machine (SVC) | 0.8933 | 0.7184 | 0.6555 | 0.1853 | 0.2889 | 0.3098 |
+| Support Vector Machine | 0.8361 | 0.7913 | 0.3753 | 0.6030 | **0.4627** | **0.3867** |
 
-### Observations on model performance
+#### Observations on Model Performance
 
-| ML Model Name | Observation about model performance |
+| ML Model Name | Observation about Model Performance |
 |---|---|
-| Logistic Regression | Highest accuracy is tied with SVC (0.8933) and it has the highest AUC (0.7717). Its recall (0.1786) and F1 (0.2815) for the positive class are relatively low. |
-| Decision Tree | It identifies more positive cases than Logistic Regression, KNN and SVC (recall 0.3289), but has the lowest AUC (0.6132), accuracy (0.8309) and MCC (0.2170). |
-| KNN | Accuracy is 0.8874, but positive-class recall is low (0.1975), resulting in an F1 score of 0.2911. |
-| Naive Bayes | It achieves the highest recall (0.4641), F1 score (0.4123) and MCC (0.3271), making it the strongest model on these positive-class balance metrics in this experiment. |
-| Support Vector Machine | SVC ties for the highest accuracy (0.8933) and has precision 0.6555, but recall (0.1853) and F1 (0.2889) are lower than Naive Bayes. |
+| Logistic Regression | Achieved a recall of 0.6238, indicating that it identified a relatively high proportion of customers who subscribed to term deposits. However, its precision and F1 score were comparatively low. |
+| Decision Tree | Achieved a balanced performance with an accuracy of 0.8268 and F1 score of 0.4285. It captured customer patterns effectively but performed below SVM in overall F1 score. |
+| KNN | Achieved the highest accuracy of 0.8874 and precision of 0.5529. However, its recall was only 0.1975, indicating that it missed many customers who actually subscribed to term deposits. |
+| Naive Bayes | Achieved an F1 score of 0.4123 and AUC of 0.7514. It provided reasonable classification performance but was outperformed by SVM. |
+| Support Vector Machine | Achieved the highest AUC of 0.7913, F1 score of 0.4627, and MCC of 0.3867. It demonstrated the best overall performance among the five classification models based on these evaluation metrics. |
 
-**Overall winner:** Naive Bayes, when selecting by F1 score (0.4123), which is the chosen positive-class-focused measure for this imbalanced dataset. Logistic Regression has the highest AUC (0.7717), so the preferred model depends on the evaluation objective.
+#### Overall Winner for the Dataset
 
-## Streamlit application
-The app provides:
-1. CSV test-data upload.
-2. A dropdown to select one of the five saved models.
-3. Accuracy, AUC, precision, recall, F1 and MCC.
-4. Confusion matrix and classification report.
-5. A comparison table from `model_comparison.csv`.
+**Support Vector Machine (SVM)**
 
-The application loads pre-trained `.joblib` pipelines and does not retrain them on uploaded test data.
+The Support Vector Machine achieved the highest F1 score of 0.4627, AUC score of 0.7913, and MCC score of 0.3867 among the five classification models.
 
-## Run locally
-```bash
-pip install -r requirements.txt
-streamlit run app.py
-```
+Although KNN achieved the highest accuracy of 0.8874, its recall was considerably lower. Since the dataset is imbalanced, accuracy alone is not sufficient to determine the best-performing classifier.
 
-Upload `test_data.csv` in the app.
+Therefore, Support Vector Machine is selected as the overall winner based on its F1 score, AUC score, and MCC.
 
-## Reproducibility note
-The notebook contains the experiment workflow. The saved model files were serialized with scikit-learn 1.6.1; therefore, the deployment dependencies pin scikit-learn 1.6.1. Python and package versions should remain compatible with the environment used to serialize the models.
+### Conclusion
+
+In this assignment, five Machine Learning classification algorithms were implemented and evaluated using the Bank Marketing dataset.
+
+The results demonstrate that different classification algorithms perform differently on the same dataset. Support Vector Machine achieved the best overall performance based on F1 score, AUC, and MCC.
+
+The trained models were saved using Joblib and integrated into an interactive Streamlit application. The application allows users to upload test data, select classification models, and view their evaluation metrics and confusion matrices without retraining the models.
